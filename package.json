@@ -16,7 +16,7 @@
     "uuid": "^9.0.0"
   },
   "scripts": {
-    "dev": "nodemon servidor"
+    "start": "nodemon servidor"
   },
   "eslintConfig": {
     "extends": [
