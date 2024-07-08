@@ -58,10 +58,10 @@ cron.schedule("*/30 * * * *", async () => {
 });
 //====================================
 //Metodo para reducir 1 segundo a la coleccion de tiempo cada segundo
-// Función para decrementar el valor de time
+// Funcion para decrementar el valor de time
 const decrementTime = async () => {
     try {
-        // Buscar el único documento en la colección Time
+        // Buscar el unico documento en la coleccion Time
         let timeEntry = await Time.findOne();
 
         if (!timeEntry) {
