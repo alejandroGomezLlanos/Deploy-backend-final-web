@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const room = require("../models/RoomCode");
 const asyncHandler = require("express-async-handler");
 //const bcrypt = require("bcrypt")
 const CryptoJS = require("crypto-js");
@@ -21,23 +22,53 @@ const getAllUsers = asyncHandler(async (req, res) => {
 //ruta: POST /users
 //acceso: privado
 const createNewUser = asyncHandler(async (req, res) => {
-  const { nombre, correo, clave } = req.body;
+  const { name, identification, email, rol, finalizadaTarea, tipoUsuario } =
+    req.body;
+
+  //lineas para meter el codigo de la sala
+  const roomCodeEntry = await room.findOne();
+  const roomCode = roomCodeEntry ? roomCodeEntry.code : "INIT";
 
   //comprobacion que no son campos vacios
   if (
-    !nombre ||
-    !correo ||
-    !clave 
+    !name ||
+    !identification ||
+    !email ||
+    !rol ||
+    !finalizadaTarea ||
+    !tipoUsuario
   ) {
     return res.status(400).json({
-      message: `Todos los campos son requeridos: ${nombre} ${correo} ${clave}`,
+      message: `Todos los campos son requeridos: ${name} ${identification} ${email} ${rol} ${finalizadaTarea} ${tipoUsuario}`,
     });
   }
 
+  //EN CASO QUE QUERAMOS EVITAR DUPLICADOS
+  //const duplicate = await User.findOne({ id }).lean().exec()
+  //if(duplicate){
+  //	return res.status(409).json({Mensaje: "usuario duplicado"})
+  //}
+
+  //Encriptacion antigua (mal)
+  //const hashedName = await bcrypt.hash(username, 10)//salt rounds
+
+  //Encriptando todos los parametros
+  const secretKey =
+    "$2b$10$tV5AHXrk3pZymfGihPI4T.S8Sxx12aWfNpyQTAt.QA029.HQqJMcy";
+  const encryptedIdentificacion = CryptoJS.AES.encrypt(
+    identification.toString(),
+    secretKey
+  ).toString();
+  const encryptedCorreo = CryptoJS.AES.encrypt(email, secretKey).toString();
+
   const userObject = {
-    nombre,
-    correo,
-    clave
+    name,
+    identification: encryptedIdentificacion,
+    email: encryptedCorreo,
+    rol,
+    finalizadaTarea,
+    tipoUsuario,
+    codigoSala: roomCode,
   };
 
   //crear y guardar nuevo usuario
@@ -45,13 +76,13 @@ const createNewUser = asyncHandler(async (req, res) => {
 
   if (user) {
     res.status(201).json({
-      message: `Nuevo usuario ${nombre} creado`,
+      message: `Nuevo usuario ${identification} creado`,
       userId: user._id,
     });
   } else {
     res
       .status(400)
-      .json({ message: `No se ha ingresado el usuario ${nombre}` });
+      .json({ message: `No se ha ingresado el usuario ${identification}` });
   }
 });
 
@@ -62,19 +93,25 @@ const updateUser = asyncHandler(async (req, res) => {
   //lamo informacion del body
   const {
     _id,
-    nombre,
-    correo,
-    clave,
+    name,
+    identification,
+    email,
+    rol,
+    finalizadaTarea,
+    tipoUsuario,
   } = req.body;
 
   //confirmando campos no vacios
   if (
-    !nombre ||
-    !correo ||
-    !clave 
+    !name ||
+    !identification ||
+    !email ||
+    !rol ||
+    !finalizadaTarea ||
+    !tipoUsuario
   ) {
     return res.status(400).json({
-      message: `Todos los campos son requeridos: ${_id} ${nombre} ${correo} ${clave}`,
+      message: `Todos los campos son requeridos: ${_id} ${name} ${identification} ${email} ${rol} ${finalizadaTarea} ${tipoUsuario}`,
     });
   }
 
@@ -117,6 +154,29 @@ const updateUser = asyncHandler(async (req, res) => {
   res.json({
     message: `Se actualizo: ${updateUser.name} ${updateUser.identification}`,
   });
+});
+
+const updateSymbols = asyncHandler(async (req, res) => {
+  try {
+
+    const {
+      huaqueroSymbols
+    } = req.body;
+
+    const user = await User.findById(userId);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.symbols = huaqueroSymbols;
+
+    await user.save();
+
+    res.status(200).json({ message: "Symbols updated successfully", user });
+  } catch (error) {
+    console.error("Error updating symbols:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+
 });
 
 module.exports = {

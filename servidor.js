@@ -20,6 +20,75 @@ const corsOptions = require("./config/corsOptions")
 const mongoose = require("mongoose")
 const connectDB = require("./config/dbConn")
 
+//====================================
+//PRUEBAS CODIGO QR
+const cron = require("node-cron");
+const RoomCode = require("./models/RoomCode");
+//===================================
+//import para el tiempo
+const Time = require('./models/Time');
+
+const generateRoomCode = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+};
+
+cron.schedule("*/30 * * * *", async () => {
+    const newCode = generateRoomCode();
+    console.log(`Generated new room code: ${newCode}`);
+    try {
+        // Update the current room code in the RoomCode collection
+        let roomCodeEntry = await RoomCode.findOne();
+        if (roomCodeEntry) {
+            roomCodeEntry.huaqueroSymbols = [];
+            roomCodeEntry.code = newCode;
+            roomCodeEntry.updatedAt = Date.now();
+            await roomCodeEntry.save();
+        } else {
+            await RoomCode.create({ code: newCode });
+        }
+
+    } catch (error) {
+        console.error("Error updating room codes:", error);
+    }
+});
+//====================================
+//Metodo para reducir 1 segundo a la coleccion de tiempo cada segundo
+// Función para decrementar el valor de time
+const decrementTime = async () => {
+    try {
+        // Buscar el único documento en la colección Time
+        let timeEntry = await Time.findOne();
+
+        if (!timeEntry) {
+            console.error('No time entry found.');
+            return;
+        }
+
+        // Restar 1 al valor de time si es mayor que 0
+        if (timeEntry.time > 0) {
+            timeEntry.time -= 1;
+            await timeEntry.save();
+            console.log(`Time decremented to: ${timeEntry.time}`);
+        } else {
+            console.log('Time is already zero. No decrement performed.');
+        }
+
+    } catch (error) {
+        console.error('Error decrementing time:', error);
+    }
+};
+
+// Configurar y ejecutar cron cada segundo
+const task = cron.schedule('* * * * * *', async () => {
+    await decrementTime();
+});
+
+//====================================
 
 //conexion base de datos
 connectDB();
@@ -53,42 +122,12 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", require("./routes/root"));
 //enrutando a un html para usuarios
 app.use("/users", require("./routes/userRoutes"))
+//enrutando para darme el codigo de la sala
+app.use("/roomCode", require("./routes/roomCodeRoutes"))
+//enrutando para el manejo del tiempo
+app.use("/time", require("./routes/timeRoutes"))
 //==============
 
-//rutas a manifiesto y favicon
-app.get("^/$|/favicon.ico", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "favicon.ico"));
-})
-
-app.get("^/$|/manifest.json", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "manifest.json"));
-})
-
-app.get("^/$|/react192.png", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "react192.png"));
-})
-
-app.get("^/$|/react512.png", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "react512.png"));
-})
-//=============
-
-//para todos los casos que no se cumplan, llevame a 404 personalizado
-//cambiamos app.get("/*",)
-//a all, esto permite que todo (incluso middleware) obtenga el erro 404
-//los if es para ver que tipo de archivo pidiï¿½
-//y le respondemos 404 dependiendo el tipo
-app.all("*", (req, res) => {
-    res.status(404);
-    if (req.accepts("html")) {
-        res.sendFile(path.join(__dirname, "views", "404.html"));
-    }
-    else if (req.accepts("json")) {
-        res.json({ error: "404 Not Found" });
-    } else {
-        res.type("txt").send("404 Not Found");
-    }
-});
 
 //error personalizado sobre CORS denegando acceso
 //recibe peticion y error y devuelve 500 con texto de error personalizado arriba
