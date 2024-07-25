@@ -78,10 +78,10 @@ const putRoom = (asyncHandler(async (req, res) => {
         } else {
             await Room.create({ code, huaqueroSymbols: huaqueroSymbols || [] });
         }
-        res.status(200).json({ message: "Código de sala actualizado correctamente" });
+        res.status(200).json({ message: "Codigo de sala actualizado correctamente" });
     } catch (error) {
-        console.error("Error actualizando códigos de sala:", error);
-        res.status(500).json({ message: "Error actualizando códigos de sala" });
+        console.error("Error actualizando codigos de sala:", error);
+        res.status(500).json({ message: "Error actualizando codigos de sala" });
     }
 }));
 
