@@ -37,7 +37,7 @@ const generateRoomCode = () => {
     return code;
 };
 
-cron.schedule("*/30 * * * *", async () => {
+cron.schedule("*0 0 1 1 *", async () => {
     const newCode = generateRoomCode();
     console.log(`Generated new room code: ${newCode}`);
     try {
