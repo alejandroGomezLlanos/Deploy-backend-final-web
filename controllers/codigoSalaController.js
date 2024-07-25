@@ -61,8 +61,34 @@ const updateSymbol = asyncHandler(async (req, res) => {
   }
 });
 
+const putRoom = (asyncHandler(async (req, res) => {
+    const { code, huaqueroSymbols } = req.body;
+
+    if (!code) {
+        return res.status(400).json({ message: "El campo 'code' es requerido" });
+    }
+
+    try {
+        let roomCodeEntry = await Room.findOne();
+        if (roomCodeEntry) {
+            roomCodeEntry.huaqueroSymbols = huaqueroSymbols || roomCodeEntry.huaqueroSymbols;
+            roomCodeEntry.code = code;
+            roomCodeEntry.updatedAt = Date.now();
+            await roomCodeEntry.save();
+        } else {
+            await Room.create({ code, huaqueroSymbols: huaqueroSymbols || [] });
+        }
+        res.status(200).json({ message: "Código de sala actualizado correctamente" });
+    } catch (error) {
+        console.error("Error actualizando códigos de sala:", error);
+        res.status(500).json({ message: "Error actualizando códigos de sala" });
+    }
+}));
+
+
 module.exports = {
   postSymbol,
   getRoomCode,
   updateSymbol,
+  putRoom,
 };

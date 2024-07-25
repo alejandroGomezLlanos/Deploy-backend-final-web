@@ -7,6 +7,7 @@ router
   .route("/")
   .post(roomController.postSymbol)
   .get(roomController.getRoomCode)
-  .patch(roomController.updateSymbol);
+  .patch(roomController.updateSymbol)
+  .put(roomController.putRoom)
 
 module.exports = router;
